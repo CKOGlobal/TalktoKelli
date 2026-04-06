@@ -1,17 +1,6 @@
 import { useState, useRef } from "react";
 
-// ─────────────────────────────────────────────
-// YOUR WELCOME VIDEO — 3 easy steps:
-// 1. Record your video (MP4, 1080p or 720p)
-// 2. Rename it: welcome.mp4
-// 3. Upload it to the /public folder via GitHub web UI
-//
-// Optional: upload welcome-poster.jpg (thumbnail shown before play)
-// Set USING_PLACEHOLDER = true temporarily while video is uploading
-// ─────────────────────────────────────────────
-const VIDEO_SRC = "/welcome.mp4";
-const VIDEO_POSTER = "/personal banner.png";
-const USING_PLACEHOLDER = false;
+const YOUTUBE_EMBED = "https://www.youtube.com/embed/am59JML0n5s?rel=0&modestbranding=1";
 
 const css = `
 @import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,400;0,500;0,600;1,400;1,500&family=DM+Sans:wght@300;400;500&display=swap');
@@ -103,43 +92,6 @@ const css = `
   top: 0; left: 0;
   width: 100%; height: 100%;
   border: none;
-}
-
-.wp-placeholder {
-  padding: 64px 40px;
-  text-align: center;
-  background: linear-gradient(135deg, #FBF3ED, #FFF9F5);
-}
-
-.wp-ph-icon {
-  width: 80px; height: 80px;
-  border-radius: 50%;
-  border: 2px dashed #E8C5A8;
-  display: flex; align-items: center; justify-content: center;
-  margin: 0 auto 20px;
-  font-size: 32px;
-}
-
-.wp-ph-title {
-  font-family: 'Fraunces', serif;
-  font-size: 20px; font-weight: 500;
-  color: #2C1A0E; margin-bottom: 10px;
-}
-
-.wp-ph-text {
-  font-size: 13px; color: #9C8068;
-  line-height: 1.7; max-width: 400px; margin: 0 auto 16px;
-}
-
-.wp-ph-code {
-  display: inline-block;
-  background: #FBF3ED;
-  border: 1px solid #E8C5A8;
-  border-radius: 6px;
-  padding: 6px 14px;
-  font-size: 11px; color: #C4622D;
-  font-family: monospace;
-  letter-spacing: 0.04em;
 }
 
 .wp-intro {
@@ -319,29 +271,14 @@ export default function WelcomePage({ onBegin, onLegal }) {
 
         <div className="wp-body">
           <div className="wp-video-wrap">
-            {USING_PLACEHOLDER ? (
-              <div className="wp-placeholder">
-                <div className="wp-ph-icon">🎬</div>
-                <div className="wp-ph-title">Upload your welcome video</div>
-                <p className="wp-ph-text">
-                  Record your video, rename it <strong>welcome.mp4</strong>, and upload it to the <strong>/public</strong> folder in GitHub. Then set USING_PLACEHOLDER = false in WelcomePage.jsx.
-                </p>
-                <div className="wp-ph-code">public/welcome.mp4</div>
-              </div>
-            ) : (
-              <div className="wp-video-inner">
-                <video
-                  src={VIDEO_SRC}
-                  poster={VIDEO_POSTER}
-                  controls
-                  controlsList="nodownload"
-                  playsInline
-                  preload="metadata"
-                  title="Welcome from Kelli Owens"
-                  style={{ width: "100%", height: "100%", objectFit: "cover", background: "#2C1A0E" }}
-                />
-              </div>
-            )}
+            <div className="wp-video-inner">
+              <iframe
+                src={YOUTUBE_EMBED}
+                title="Welcome from Kelli Owens"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+              />
+            </div>
           </div>
 
           <div className="wp-intro">
