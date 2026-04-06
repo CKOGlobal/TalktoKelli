@@ -241,7 +241,7 @@ export default function CoachingForm({ onComplete }) {
     window.location.href = BOOKING_URL;
   };
 
-  const phaseNum  const phaseNum = phase === PH.AGENDA ? 1 : phase === PH.QUALIFY ? 2 : 3;
+  const phaseNum = phase === PH.AGENDA ? 1 : phase === PH.QUALIFY ? 2 : 3;
 
   return (
     <>
