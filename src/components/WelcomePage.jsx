@@ -10,7 +10,7 @@ import { useState, useRef } from "react";
 // Set USING_PLACEHOLDER = true temporarily while video is uploading
 // ─────────────────────────────────────────────
 const VIDEO_SRC = "/welcome.mp4";
-const VIDEO_POSTER = "/welcome-poster.jpg";
+const VIDEO_POSTER = "/personal banner.png";
 const USING_PLACEHOLDER = false;
 
 const css = `

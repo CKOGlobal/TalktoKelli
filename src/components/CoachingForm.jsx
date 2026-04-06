@@ -170,8 +170,11 @@ export default function CoachingForm({ onComplete }) {
   const setContact_ = (id, val) => setContact(p => ({ ...p, [id]: val }));
   const setAnswer = (id, val) => setAnswers(p => ({ ...p, [id]: val }));
 
+  const isValidEmail = (e) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
+  const isValidPhone = (p) => !p || /^\+?[\d\s\-\(\)]{10,}$/.test(p);
+
   const canNext = () => {
-    const hasContact = contact.name.trim() && contact.email.trim();
+    const hasContact = contact.name.trim() && isValidEmail(contact.email) && isValidPhone(contact.phone);
     const hasAnswer = (answers[current?.id] || "").trim().length > 5;
     if (agendaStep === 0) return hasContact && hasAnswer;
     return hasAnswer;
@@ -218,108 +221,27 @@ export default function CoachingForm({ onComplete }) {
     } finally { setLoadingQual(false); }
   };
 
+  const BOOKING_URL = "https://api.leadconnectorhq.com/widget/bookings/talktokelli";
+
   const handleSubmit = async () => {
     setPhase(PH.SUBMITTING);
     scroll();
 
-    const now = new Date();
-    const dateStr = now.toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
-    const timeStr = now.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", timeZoneName: "short" });
-
-    const agendaBlock = SECTIONS.map(s =>
-      `${s.eyebrow.toUpperCase()}\n${answers[s.id] || "(not provided)"}`
-    ).join("\n\n────────────────────────────\n\n");
-
-    const qualBlock = qualQs
-      ? qualQs.map((q, i) =>
-          `Follow-Up Q${i + 1}: ${q.question}\nStudent Answer: ${qualAnswers[q.id] || "(not answered)"}`
-        ).join("\n\n")
-      : "(none)";
-
-    let coachNotes = "(coaching prep notes unavailable — please review the agenda manually)";
     try {
-      const summary = buildSummary();
-      const qualSummary = qualQs
-        ? qualQs.map(q => `Q: ${q.question}\nA: ${qualAnswers[q.id] || "not answered"}`).join("\n\n")
-        : "";
-
-      const data = await callAPI({
-        model: "claude-sonnet-4-20250514",
-        max_tokens: 1400,
-        system: `You are a coaching assistant helping Kelli Owens, a licensed Texas realtor and real estate investing coach who teaches the Exit First Framework — always plan the exit strategy before entering a deal. Write directly to Kelli in a collegial, direct tone. Be specific and reference what the student actually wrote. Plain text. Numbered lists where helpful. No asterisks or markdown symbols.`,
-        messages: [{
-          role: "user",
-          content: `Student: ${contact.name}, Call #${contact.callNum || "?"}\n\nSTUDENT AGENDA:\n${summary}\n\nFOLLOW-UP Q&A:\n${qualSummary}\n\nWrite coaching prep notes for Kelli in these 4 sections:\n\n1. QUICK READ (2-3 sentences on where this student is right now — their energy, where they're stuck, what stage they're at)\n2. KEY THEMES TO WATCH (2-4 patterns, blockers, or opportunities you noticed — be specific to their words)\n3. SUGGESTED COACHING MOVES (3-4 specific approaches, reframes, or questions Kelli might use on the call)\n4. WATCH FOR (1-2 things that might be the real issue beneath what they wrote — what's likely under the surface)`,
-        }],
-      });
-      coachNotes = data.content?.[0]?.text || coachNotes;
-    } catch {}
-
-    const emailBody = [
-      "PRE-CALL AGENDA — COACHING SESSION",
-      `Received: ${dateStr} at ${timeStr}`,
-      `Student: ${contact.name}`,
-      `Email: ${contact.email}`,
-      `Phone: ${contact.phone || "not provided"}`,
-      `Call #: ${contact.callNum || "not specified"}`,
-      "",
-      "════════════════════════════════════",
-      "STUDENT AGENDA",
-      "════════════════════════════════════",
-      "",
-      agendaBlock,
-      "",
-      "════════════════════════════════════",
-      "AI FOLLOW-UP Q&A",
-      "════════════════════════════════════",
-      "",
-      qualBlock,
-      "",
-      "════════════════════════════════════",
-      "AI COACHING PREP NOTES FOR KELLI",
-      "════════════════════════════════════",
-      "",
-      coachNotes,
-      "",
-      "────────────────────────────────────",
-      "Submitted via TalkToKelli.com Pre-Call Agenda System",
-    ].join("\n");
-
-    const subject = `Pre-Call Agenda: ${contact.name} — ${dateStr} at ${timeStr}`;
-    const mailto = `mailto:kelli.owens@thekorealtygroup.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(emailBody)}`;
-
-    // Fire GHL webhook — tags contact as agenda-complete, triggers booking link email
-    try {
-      await fetch("/api/ghl-webhook", {
+      await fetch("/api/send-email", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: contact.name,
-          email: contact.email,
-          phone: contact.phone,
-          callNum: contact.callNum,
-        }),
+        body: JSON.stringify({ contact, answers, qualQs, qualAnswers }),
       });
     } catch (e) {
-      console.warn("GHL webhook call failed:", e);
+      console.warn("Send email error:", e);
     }
 
-    window.location.href = mailto;
-
-    onComplete({
-      contact,
-      answers,
-      qualQs,
-      qualAnswers,
-      emailBody,
-      mailto,
-      dateStr,
-      timeStr,
-      coachNotes,
-    });
+    // Redirect straight to booking — no waiting
+    window.location.href = BOOKING_URL;
   };
 
-  const phaseNum = phase === PH.AGENDA ? 1 : phase === PH.QUALIFY ? 2 : 3;
+  const phaseNum  const phaseNum = phase === PH.AGENDA ? 1 : phase === PH.QUALIFY ? 2 : 3;
 
   return (
     <>
@@ -344,8 +266,8 @@ export default function CoachingForm({ onComplete }) {
           <div className="cf-body">
             <div className="submitting-overlay">
               <div className="spin-ring" />
-              <div className="so-title">Building your agenda...</div>
-              <p className="so-sub">Generating AI coaching prep notes for Kelli.<br />Your email will open in just a moment.</p>
+              <div className="so-title">Submitting your agenda...</div>
+              <p className="so-sub">Sending your notes to Kelli and taking you<br />straight to the booking calendar.</p>
             </div>
           </div>
         )}
@@ -382,7 +304,24 @@ export default function CoachingForm({ onComplete }) {
                   {[["name","Full Name",true,"text","Your full name"],["email","Email Address",true,"email","your@email.com"],["phone","Best Phone Number",false,"tel","(555) 555-5555"],["callNum","Which coaching call is this?",false,"text","e.g. Call #1, Call #4..."]].map(([id,label,req,type,ph]) => (
                     <div key={id} className="fw">
                       <label className="fl">{label}{req && <span className="req">*</span>}</label>
-                      <input className="inp" type={type} placeholder={ph} value={contact[id]} onChange={e => setContact_(id, e.target.value)} />
+                      <input
+                        className="inp"
+                        type={type}
+                        placeholder={ph}
+                        value={contact[id]}
+                        onChange={e => setContact_(id, e.target.value)}
+                        style={
+                          (id === "email" && contact.email && !isValidEmail(contact.email)) ||
+                          (id === "phone" && contact.phone && !isValidPhone(contact.phone))
+                            ? { borderColor: "#C4622D" } : {}
+                        }
+                      />
+                      {id === "email" && contact.email && !isValidEmail(contact.email) && (
+                        <div style={{ fontSize: 11, color: "#C4622D", marginTop: 4 }}>Please enter a valid email address</div>
+                      )}
+                      {id === "phone" && contact.phone && !isValidPhone(contact.phone) && (
+                        <div style={{ fontSize: 11, color: "#C4622D", marginTop: 4 }}>Please enter a valid phone number (10+ digits)</div>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -504,7 +443,7 @@ export default function CoachingForm({ onComplete }) {
             )}
 
             <div className="sub-note">
-              When you submit, Kelli receives your full agenda along with AI-generated coaching prep notes. Your email client will open automatically.
+              When you submit, Kelli receives your full agenda automatically and you'll be taken straight to the booking calendar.
             </div>
             <div className="nav-bar">
               <button className="btn-back" onClick={() => { setPhase(PH.QUALIFY); scroll(); }}>← Back</button>
