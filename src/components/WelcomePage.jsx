@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 
-const YOUTUBE_EMBED = "https://youtu.be/iKxdul76Jos";
+const YOUTUBE_EMBED = "https://www.youtube.com/embed/iKxdul76Jos?rel=0&modestbranding=1";
 
 const css = `
 @import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,400;0,500;0,600;1,400;1,500&family=DM+Sans:wght@300;400;500&display=swap');
