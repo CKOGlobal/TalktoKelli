@@ -1,13 +1,17 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
 
 // ─────────────────────────────────────────────
-// STEP 1: Paste your HeyGen share URL here after
-// generating the welcome video in HeyGen Studio.
-// Format: https://share.heygen.com/v/YOUR_VIDEO_ID
+// YOUR WELCOME VIDEO — 3 easy steps:
+// 1. Record your video (MP4, 1080p or 720p)
+// 2. Rename it: welcome.mp4
+// 3. Upload it to the /public folder via GitHub web UI
+//
+// Optional: upload welcome-poster.jpg (thumbnail shown before play)
+// Set USING_PLACEHOLDER = true temporarily while video is uploading
 // ─────────────────────────────────────────────
-const HEYGEN_VIDEO_URL = "PASTE_YOUR_HEYGEN_URL_HERE";
-
-const USING_PLACEHOLDER = HEYGEN_VIDEO_URL === "PASTE_YOUR_HEYGEN_URL_HERE";
+const VIDEO_SRC = "/welcome.mp4";
+const VIDEO_POSTER = "/welcome-poster.jpg";
+const USING_PLACEHOLDER = false;
 
 const css = `
 @import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,400;0,500;0,600;1,400;1,500&family=DM+Sans:wght@300;400;500&display=swap');
@@ -283,9 +287,7 @@ const css = `
 }
 `;
 
-export default function WelcomePage({ onBegin }) {
-  const [videoLoaded, setVideoLoaded] = useState(false);
-
+export default function WelcomePage({ onBegin, onLegal }) {
   const steps = [
     { title: "Set Your Agenda", desc: "Tell me where you are and what you need from our time together." },
     { title: "AI Digs Deeper", desc: "Based on your answers, a few targeted follow-up questions surface what matters most." },
@@ -320,20 +322,23 @@ export default function WelcomePage({ onBegin }) {
             {USING_PLACEHOLDER ? (
               <div className="wp-placeholder">
                 <div className="wp-ph-icon">🎬</div>
-                <div className="wp-ph-title">Your HeyGen Welcome Video Goes Here</div>
+                <div className="wp-ph-title">Upload your welcome video</div>
                 <p className="wp-ph-text">
-                  Once you generate your avatar video in HeyGen Studio using the script in HEYGEN_SCRIPT.md, paste the share URL into this file:
+                  Record your video, rename it <strong>welcome.mp4</strong>, and upload it to the <strong>/public</strong> folder in GitHub. Then set USING_PLACEHOLDER = false in WelcomePage.jsx.
                 </p>
-                <div className="wp-ph-code">src/components/WelcomePage.jsx → HEYGEN_VIDEO_URL</div>
+                <div className="wp-ph-code">public/welcome.mp4</div>
               </div>
             ) : (
               <div className="wp-video-inner">
-                <iframe
-                  src={HEYGEN_VIDEO_URL}
-                  allow="autoplay; fullscreen"
-                  allowFullScreen
+                <video
+                  src={VIDEO_SRC}
+                  poster={VIDEO_POSTER}
+                  controls
+                  controlsList="nodownload"
+                  playsInline
+                  preload="metadata"
                   title="Welcome from Kelli Owens"
-                  onLoad={() => setVideoLoaded(true)}
+                  style={{ width: "100%", height: "100%", objectFit: "cover", background: "#2C1A0E" }}
                 />
               </div>
             )}
@@ -382,7 +387,10 @@ export default function WelcomePage({ onBegin }) {
         </div>
 
         <div className="wp-footer">
-          © {new Date().getFullYear()} Kelli Owens · TalkToKelli.com · Real Estate Coaching
+          © {new Date().getFullYear()} CKO Global LLC · TalkToKelli.com &nbsp;·&nbsp;
+          <button onClick={onLegal} style={{ background: "transparent", border: "none", color: "#6B4E35", cursor: "pointer", fontSize: "inherit", textDecoration: "underline", letterSpacing: "inherit", fontFamily: "inherit" }}>Terms &amp; Privacy</button>
+          &nbsp;·&nbsp; <a href="mailto:kelli.owens@theKOrealtygroup.com" style={{ color: "#6B4E35" }}>kelli.owens@theKOrealtygroup.com</a>
+          &nbsp;·&nbsp; <a href="tel:3466285216" style={{ color: "#6B4E35" }}>346-628-5216</a>
         </div>
       </div>
     </>

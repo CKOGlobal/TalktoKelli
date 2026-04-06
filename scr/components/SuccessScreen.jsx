@@ -31,7 +31,7 @@ const css = `
 @media (max-width: 580px) { .ss-body { padding: 40px 16px 56px; } .ss-topbar { padding: 14px 20px; } .ss-card { padding: 24px 20px; } }
 `;
 
-export default function SuccessScreen({ data }) {
+export default function SuccessScreen({ data, onLegal }) {
   const [showRaw, setShowRaw] = useState(false);
   const [copied, setCopied] = useState(false);
 
@@ -115,7 +115,10 @@ export default function SuccessScreen({ data }) {
         </div>
 
         <div className="ss-footer">
-          © {new Date().getFullYear()} Kelli Owens · TalkToKelli.com · Real Estate Coaching
+          © {new Date().getFullYear()} CKO Global LLC · TalkToKelli.com &nbsp;·&nbsp;
+          <button onClick={onLegal} style={{ background: "transparent", border: "none", color: "#6B4E35", cursor: "pointer", fontSize: "inherit", textDecoration: "underline", fontFamily: "inherit" }}>Terms &amp; Privacy</button>
+          &nbsp;·&nbsp; <a href="mailto:kelli.owens@theKOrealtygroup.com" style={{ color: "#6B4E35" }}>kelli.owens@theKOrealtygroup.com</a>
+          &nbsp;·&nbsp; <a href="tel:3466285216" style={{ color: "#6B4E35" }}>346-628-5216</a>
         </div>
       </div>
     </>
