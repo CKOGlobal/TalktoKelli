@@ -84,57 +84,57 @@ const SECTIONS = [
     id: "accomplishments",
     eyebrow: "Since Our Last Call",
     title: "What wins, actions, or progress have you made?",
-    hint: "<strong>Big or small — it all counts.</strong> Did you analyze a deal? Have a seller conversation? Set up a system? Make a call you were avoiding? Even mindset shifts count. Write it all down.",
-    placeholder: "e.g. I drove for dollars three times this week, analyzed two properties using the Exit First Framework, and finally had a seller conversation I'd been putting off...",
-    aiPrompt: "A real estate investing coaching student is stuck on 'accomplishments since our last call'. Give them 5 short encouraging prompting questions specific to real estate investing actions — deal analysis, offers, seller conversations, marketing, mindset. Numbered. Plain text, no symbols."
+    hint: "<strong>Big or small — it all counts.</strong> Did you analyze a deal? Have a client conversation? Set up a system? Make a call you were avoiding? Even mindset shifts count. Write it all down.",
+    placeholder: "e.g. I reached out to 3 new leads, finished setting up my follow-up system, and finally had a tough conversation I'd been putting off...",
+    aiPrompt: "A coaching student is stuck on listing accomplishments since their last call. Give exactly 5 short prompting questions — numbered 1 through 5 — to help them identify wins and progress. Questions 1 and 2 should be specific to real estate investing (deal analysis, offers, seller conversations, marketing). Questions 3, 4, and 5 should apply to any business owner (revenue actions, client conversations, systems built, fears faced, mindset shifts). Plain text only. No symbols, no markdown, no intro sentence."
   },
   {
     id: "topics",
     eyebrow: "Today's Agenda",
     title: "What topics or situations do you most want to work through today?",
-    hint: "<strong>Think about what's been taking up the most mental space.</strong> Specific deals, seller scenarios, strategy confusion, fear, marketing, numbers — everything is fair game. List as many as you want.",
-    placeholder: "e.g. I have a deal I can't figure out how to structure. I'm stuck on what to say when sellers ask what I'll do with the property. And I want to talk through whether BRRRR makes sense for my market...",
-    aiPrompt: "A real estate investing student needs help listing coaching topics. Give 8 common areas beginners to mid-level investors bring to coaching — strategy, deal structure, seller conversations, fear, marketing, systems, numbers. Numbered. Plain text only."
+    hint: "<strong>Think about what's been taking up the most mental space.</strong> Deals, clients, strategy, fear, marketing, numbers — everything is fair game. List as many as you want.",
+    placeholder: "e.g. I have a situation I can't figure out how to handle. I'm stuck on what to say when prospects ask about pricing. And I want to talk through whether my current strategy makes sense...",
+    aiPrompt: "A coaching student needs help listing topics for today's coaching call. Give exactly 5 numbered topic examples. Questions 1 and 2 should be real estate specific (deal structure, seller scenarios, strategy, market analysis). Questions 3, 4, and 5 should be general business topics any entrepreneur might bring (revenue, clients, marketing, team, systems, fear, decision-making). Plain text only. No symbols, no markdown, no intro sentence."
   },
   {
     id: "priority",
     eyebrow: "Your Highest Priority",
     title: "If we only had 15 minutes — what is the ONE thing you need most from this call?",
     hint: "<strong>Be as specific as you can.</strong> What would make you walk away from this call feeling clear and unstuck? This tells me where to focus our time together.",
-    placeholder: "e.g. I need to decide whether to make an offer on a deal I've been sitting on for two weeks. I keep second-guessing myself and I need either validation or a push forward...",
-    aiPrompt: "A real estate investor can't name their single most important coaching priority. Give them 3 short direct questions they can ask themselves to figure out what they most need right now. Plain text, numbered."
+    placeholder: "e.g. I need to decide whether to move forward with an opportunity I've been sitting on. I keep second-guessing myself and I need either validation or a push forward...",
+    aiPrompt: "A coaching student can't identify their single highest priority for this call. Give exactly 5 short direct questions to help them figure it out — numbered 1 through 5. Questions 1 and 2 should reference real estate investing decisions (offer, deal, strategy). Questions 3, 4, and 5 should apply to any business owner (revenue decision, stuck action, next step clarity). Plain text only. No symbols, no markdown, no intro sentence."
   },
   {
     id: "questions",
     eyebrow: "Specific Questions",
     title: "What specific questions are you bringing to the call?",
-    hint: "<strong>Write them out clearly.</strong> The more specific your question, the more useful my answer. 'How do I respond when a seller says their price is firm?' is workable. 'What should I do?' is not.",
-    placeholder: "e.g. 1. How do I know when a deal is dead vs. needs a different structure? 2. What do I say when a seller asks how I found them? 3. Am I ready for multi-family?",
-    aiPrompt: "A real estate investor needs question examples for their coaching call. Give 8 specific coaching questions beginners to intermediate investors commonly ask — about deals, negotiation, strategy, fear, momentum. Numbered. Plain text only."
+    hint: "<strong>Write them out clearly.</strong> The more specific your question, the more useful my answer. 'How do I respond when a client pushes back on my price?' is workable. 'What should I do?' is not.",
+    placeholder: "e.g. 1. How do I know when to walk away vs. restructure? 2. What do I say when someone asks how I found them? 3. Am I ready to take on more clients?",
+    aiPrompt: "A coaching student needs example questions to bring to their coaching call. Give exactly 5 numbered example questions. Questions 1 and 2 should be real estate specific (deals, negotiation, strategy, seller conversations). Questions 3, 4, and 5 should be general business questions any entrepreneur might ask (pricing, clients, marketing, growth, fear, momentum). Plain text only. No symbols, no markdown, no intro sentence."
   },
   {
     id: "review",
     eyebrow: "Bring It to the Table",
     title: "Is there anything specific you want me to look at with you?",
-    hint: "<strong>This is your time.</strong> A deal to run numbers on? A contract to review? A script that isn't working? A seller situation to role-play? Share the details here and we'll dig in.",
-    placeholder: "e.g. Property at 123 Elm St — ARV ~$285k, asking $220k, needs ~$40k work. I want to run it through the Exit First Framework together. OR: Nothing specific this week.",
-    aiPrompt: "What can a real estate investor bring to a coaching call for review? Give 6 specific things — deals, documents, scripts, numbers, situations — that a coach can help analyze. Numbered. Plain text only."
+    hint: "<strong>This is your time.</strong> A deal to run numbers on? A proposal to review? A script that isn't working? A tough situation to role-play? Share the details here and we'll dig in.",
+    placeholder: "e.g. I have a proposal I want to walk through. I'm not sure the numbers make sense. OR: Nothing specific this week.",
+    aiPrompt: "A coaching student needs ideas for what to bring to their coaching call for review. Give exactly 5 numbered examples. Items 1 and 2 should be real estate specific (deals, contracts, numbers, seller scripts). Items 3, 4, and 5 should apply to any business (pricing structure, sales script, marketing piece, revenue plan, team issue). Plain text only. No symbols, no markdown, no intro sentence."
   },
   {
     id: "next30",
     eyebrow: "Looking Ahead",
     title: "What are you working toward over the next 30 days?",
-    hint: "<strong>What does a meaningful win look like for you this month?</strong> Think deals, offers, income, skills, or habits. Where do you want to be 30 days from today?",
-    placeholder: "e.g. Make 5 offers on off-market properties. Close my first wholesale deal. Get a consistent follow-up system running so I stop losing leads...",
-    aiPrompt: "Help a real estate investor think through 30-day goals. Give 6 specific measurable milestones for a beginner to intermediate investor — deal-finding, offers, closings, marketing, system-building. Numbered. Plain text only."
+    hint: "<strong>What does a meaningful win look like for you this month?</strong> Think revenue, clients, deals, skills, or habits. Where do you want to be 30 days from today?",
+    placeholder: "e.g. Land 2 new clients. Make 5 offers on off-market properties. Get a consistent follow-up system running so I stop losing leads...",
+    aiPrompt: "A coaching student needs help defining 30-day goals. Give exactly 5 numbered goal examples. Goals 1 and 2 should be real estate investing milestones (offers, deals, closings, marketing, lead generation). Goals 3, 4, and 5 should be general business milestones any entrepreneur could use (revenue target, client acquisition, system, skill, habit). Plain text only. No symbols, no markdown, no intro sentence."
   },
   {
     id: "unfinished",
     eyebrow: "Checking In",
     title: "Did you have any commitments from our last call that didn't get done?",
     hint: "<strong>No judgment — none at all.</strong> Naming what didn't happen is often more valuable than what did. This is a safe space. We'll figure out together what's really in the way.",
-    placeholder: "e.g. I committed to 3 offers but only sent one. I kept second-guessing my numbers. OR: Everything complete — here's what I finished: ...",
-    aiPrompt: "A real estate investor is trying to remember unfinished commitments from their last coaching call. Give 6 common action items coaches typically assign between sessions — so they can jog their memory. Numbered. Plain text only."
+    placeholder: "e.g. I committed to 3 follow-ups but only did one. I kept second-guessing myself. OR: Everything complete — here's what I finished: ...",
+    aiPrompt: "A coaching student is trying to remember unfinished commitments from their last coaching call. Give exactly 5 numbered examples of common action items a coach might assign between sessions. Items 1 and 2 should be real estate specific (offers, outreach, deal analysis). Items 3, 4, and 5 should apply to any business (follow-up calls, content creation, pricing review, system setup, client outreach). Plain text only. No symbols, no markdown, no intro sentence."
   }
 ];
 
@@ -187,7 +187,7 @@ export default function CoachingForm({ onComplete }) {
       const data = await callAPI({
         model: "claude-sonnet-4-20250514",
         max_tokens: 600,
-        system: "You are a warm real estate investing coach. Plain text only. Numbered lists. No markdown. No asterisks.",
+        system: "You are a warm business and real estate coach. Plain text only. Numbered lists. No markdown. No asterisks. No intro sentence.",
         messages: [{ role: "user", content: current.aiPrompt }],
       });
       setHints(p => ({ ...p, [current.id]: data.content?.[0]?.text || "Think about what took the most mental energy this week." }));
@@ -205,16 +205,16 @@ export default function CoachingForm({ onComplete }) {
       const data = await callAPI({
         model: "claude-sonnet-4-20250514",
         max_tokens: 900,
-        system: `You are a skilled real estate investing coach preparing for a student's coaching call. Read their agenda and generate 3 targeted follow-up questions that go one layer deeper — specific to what they actually wrote, not generic. Return ONLY valid JSON, no other text:
+        system: `You are a skilled business coach preparing for a one-on-one coaching call. Your clients include real estate investors, entrepreneurs, small business owners, and professionals in various industries — you do not know in advance what kind of business this student is in. Read their agenda carefully and determine their context from what they actually wrote. Generate 3 targeted follow-up questions that go one layer deeper — questions must be specific to what this person actually wrote, not generic, and must match their actual business context. Do NOT assume real estate unless they clearly mentioned it. Return ONLY valid JSON, no other text:
 {"questions":[{"question":"...","why":"brief reason (5-8 words, lowercase)","id":"q0"},{"question":"...","why":"...","id":"q1"},{"question":"...","why":"...","id":"q2"}]}`,
-        messages: [{ role: "user", content: `Student agenda:\n\n${buildSummary()}\n\nGenerate 3 targeted qualifying follow-up questions.` }],
+        messages: [{ role: "user", content: `Student agenda:\n\n${buildSummary()}\n\nGenerate 3 targeted qualifying follow-up questions based on what this specific student wrote.` }],
       });
       const raw = data.content?.[0]?.text || "{}";
       const parsed = JSON.parse(raw.replace(/```json|```/g, "").trim());
       setQualQs(parsed.questions || []);
     } catch {
       setQualQs([
-        { question: "When you picture a 'successful' outcome from this call, what would that look like specifically?", why: "clarifies what winning looks like", id: "q0" },
+        { question: "When you picture a successful outcome from this call, what would that look like specifically?", why: "clarifies what winning looks like", id: "q0" },
         { question: "What's the story you've been telling yourself about why the next step hasn't happened yet?", why: "surfaces the real block", id: "q1" },
         { question: "What would you need to believe to be true in order to take action in the next 7 days?", why: "identifies belief barriers", id: "q2" },
       ]);
@@ -237,7 +237,6 @@ export default function CoachingForm({ onComplete }) {
       console.warn("Send email error:", e);
     }
 
-    // Redirect straight to booking — no waiting
     window.location.href = BOOKING_URL;
   };
 
