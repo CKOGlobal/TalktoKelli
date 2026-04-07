@@ -26,7 +26,7 @@ const GHL_HEADERS = (apiKey) => ({
 async function findContact(email, apiKey, locationId) {
   try {
     const res = await fetch(
-      `${GHL_BASE}/contacts/?locationId=${locationId}&email=${encodeURIComponent(email)}`,
+      `${GHL_BASE}/contacts/?locationId=${locationId}&query=${encodeURIComponent(email)}`,
       { headers: GHL_HEADERS(apiKey) }
     );
     if (!res.ok) return null;
