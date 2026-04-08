@@ -60,17 +60,28 @@ export default async function handler(req, res) {
     }
 
     const data = await ghlRes.json();
-    // Filter to confirmed status only (calendar ID already scopes to Coaching calendar)
-    appointments = (data.events || []).filter(e => e.status === "confirmed");
+    console.log("GHL raw keys:", Object.keys(data));
+    const allEvents = data.events || data.appointments || [];
+    console.log("GHL total events:", allEvents.length);
+    if (allEvents.length > 0) console.log("Sample event status:", allEvents[0].status, allEvents[0].appointmentStatus);
 
-    console.log("Total confirmed coaching appointments found:", appointments.length);
+    // Try multiple status field names GHL might use
+    appointments = allEvents.filter(e =>
+      ["confirmed","booked","new"].includes(e.status) ||
+      ["confirmed","booked","new"].includes(e.appointmentStatus)
+    );
+    console.log("Filtered appointments:", appointments.length);
+
+    if (allEvents.length > 0 && req.query.debug === "1") {
+      return res.status(200).json({ debug: true, rawKeys: Object.keys(data), sample: allEvents.slice(0,3) });
+    }
   } catch (e) {
     console.error("GHL fetch error:", e);
     return res.status(500).json({ error: "GHL fetch failed", detail: e.message });
   }
 
   if (appointments.length === 0) {
-    return res.status(200).json({ message: "No confirmed coaching appointments found in date range.", from: fromDate, to: toDate });
+    return res.status(200).json({ message: "No coaching appointments found in date range.", from: fromDate, to: toDate });
   }
 
   // ── 2. Build line items ─────────────────────────────────────────
