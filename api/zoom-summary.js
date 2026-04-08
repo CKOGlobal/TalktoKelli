@@ -4,7 +4,7 @@
 // 2. Passes summary to Claude to generate a client task list
 // 3. Finds the GHL contact by name (meeting topic)
 // 4. Posts task list as a note on the contact
-// 5. Emails task list to client + Kelli via Resend
+// 5. Emails task list TO client, CC Kelli via Resend
 //
 // Required Vercel env vars:
 //   ANTHROPIC_API_KEY
@@ -26,8 +26,12 @@ async function searchContactByName(name, apiKey, locationId) {
       `${GHL_BASE}/contacts/?locationId=${locationId}&query=${encodeURIComponent(name)}`,
       { headers: GHL_HEADERS(apiKey) }
     );
-    if (!res.ok) return null;
+    if (!res.ok) {
+      console.error("GHL search failed:", res.status, await res.text());
+      return null;
+    }
     const data = await res.json();
+    console.log("GHL search results for", name, ":", JSON.stringify(data.contacts?.map(c => ({ id: c.id, name: `${c.firstName} ${c.lastName}`, email: c.email }))));
     return data.contacts?.[0] || null;
   } catch (e) {
     console.error("GHL searchContactByName error:", e);
@@ -43,6 +47,7 @@ async function addNote(contactId, body, apiKey) {
       body: JSON.stringify({ body }),
     });
     if (!res.ok) console.error("GHL addNote error:", await res.text());
+    else console.log("GHL note posted to contact:", contactId);
   } catch (e) {
     console.error("GHL addNote error:", e);
   }
@@ -95,8 +100,10 @@ export default async function handler(req, res) {
     console.error("Claude error:", e);
   }
 
+  const clientName = (meeting_topic || "Coaching Session").trim();
+
   const noteBody = [
-    `POST-CALL TASK LIST — ${(meeting_topic || "Coaching Session").trim().toUpperCase()}`,
+    `POST-CALL TASK LIST — ${clientName.toUpperCase()}`,
     `Generated: ${dateStr}`,
     "",
     taskList,
@@ -122,26 +129,39 @@ export default async function handler(req, res) {
   }
 
   // ── 3. Send task list email via Resend ─────────────────────────
-  try {
-    const toList = ["kelli@proactively-lazy.com", "kelli.owens@TheKOrealtygroup.com"];
-    if (clientEmail) toList.push(clientEmail);
+  // Client receives email TO, Kelli is CC'd
+  // If no client email found, send to Kelli only so nothing is lost
+  const kelliEmails = ["kelli@proactively-lazy.com", "kelli.owens@TheKOrealtygroup.com"];
 
-    await fetch("https://api.resend.com/emails", {
+  try {
+    const emailPayload = {
+      from: process.env.FROM_EMAIL || "TalkToKelli <coaching@proactively-lazy.com>",
+      subject: `Your Action Items from Today's Call — ${clientName}`,
+      text: noteBody,
+    };
+
+    if (clientEmail) {
+      emailPayload.to = [clientEmail];
+      emailPayload.cc = kelliEmails;
+    } else {
+      // No client email — flag it in subject so Kelli knows
+      emailPayload.to = kelliEmails;
+      emailPayload.subject = `[NO CLIENT EMAIL] Action Items — ${clientName}`;
+      console.warn("No client email found — sent to Kelli only for:", clientName);
+    }
+
+    const resendRes = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {
         "Authorization": `Bearer ${process.env.RESEND_API_KEY}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        from: process.env.FROM_EMAIL || "TalkToKelli <coaching@proactively-lazy.com>",
-        to: toList,
-        subject: `Your Action Items from Today's Call — ${(meeting_topic || "Coaching Session").trim()}`,
-        text: noteBody,
-      }),
+      body: JSON.stringify(emailPayload),
     });
+    if (!resendRes.ok) console.error("Resend error:", await resendRes.json());
   } catch (e) {
     console.error("Resend error:", e);
   }
 
-  return res.status(200).json({ success: true, taskList });
+  return res.status(200).json({ success: true, taskList, clientEmail });
 }
