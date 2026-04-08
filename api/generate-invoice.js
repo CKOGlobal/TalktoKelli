@@ -50,7 +50,7 @@ export default async function handler(req, res) {
   // ── 1. Fetch all appointments from GHL ─────────────────────────
   let appointments = [];
   try {
-    const url = `${GHL_BASE}/calendars/events?locationId=${locationId}&startTime=${startTime}&endTime=${endTime}&calendarId=all`;
+    const url = `${GHL_BASE}/calendars/events?locationId=${locationId}&startTime=${startTime}&endTime=${endTime}&calendarId=rCe4hoZBLKZJrwuFEXgH`;
     const ghlRes = await fetch(url, { headers: GHL_HEADERS(apiKey) });
 
     if (!ghlRes.ok) {
@@ -60,13 +60,8 @@ export default async function handler(req, res) {
     }
 
     const data = await ghlRes.json();
-    // Filter to Coaching calendar + confirmed status only
-    appointments = (data.events || []).filter(e =>
-      e.status === "confirmed" &&
-      (e.calendarId?.toLowerCase().includes("coach") ||
-       e.title?.toLowerCase().includes("coach") ||
-       e.calendar?.name?.toLowerCase().includes("coach"))
-    );
+    // Filter to confirmed status only (calendar ID already scopes to Coaching calendar)
+    appointments = (data.events || []).filter(e => e.status === "confirmed");
 
     console.log("Total confirmed coaching appointments found:", appointments.length);
   } catch (e) {
