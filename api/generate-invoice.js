@@ -65,11 +65,16 @@ export default async function handler(req, res) {
     console.log("GHL total events:", allEvents.length);
     if (allEvents.length > 0) console.log("Sample event status:", allEvents[0].status, allEvents[0].appointmentStatus);
 
-    // Try multiple status field names GHL might use
-    appointments = allEvents.filter(e =>
-      ["confirmed","booked","new"].includes(e.status) ||
-      ["confirmed","booked","new"].includes(e.appointmentStatus)
-    );
+    // Filter: confirmed status, exclude non-coaching events, must have contactId
+    const EXCLUDE_KEYWORDS = ["block", "lunch", "busy", "mastermind", "master mind", "laser", "round table", "roundtable"];
+    appointments = allEvents.filter(e => {
+      const status = e.appointmentStatus || e.status || "";
+      const title = (e.title || "").toLowerCase();
+      const isConfirmed = ["confirmed","booked","new"].includes(status);
+      const isExcluded = EXCLUDE_KEYWORDS.some(kw => title.includes(kw)) || e.isRecurring === true;
+      const hasContact = !!e.contactId;
+      return isConfirmed && !isExcluded && hasContact;
+    });
     console.log("Filtered appointments:", appointments.length);
 
     if (allEvents.length > 0 && req.query.debug === "1") {
