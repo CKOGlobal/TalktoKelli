@@ -50,7 +50,7 @@ export default async function handler(req, res) {
   // ── 1. Fetch all appointments from GHL ─────────────────────────
   let appointments = [];
   try {
-    const url = `${GHL_BASE}/calendars/events?locationId=${locationId}&startTime=${startTime}&endTime=${endTime}&calendarId=rCe4hoZBLKZJrwuFEXgH`;
+    const url = `${GHL_BASE}/calendars/events?locationId=${locationId}&startTime=${startTime}&endTime=${endTime}&calendarId=rCe4hoZBLKZJrwuFEXgH&limit=100`;
     const ghlRes = await fetch(url, { headers: GHL_HEADERS(apiKey) });
 
     if (!ghlRes.ok) {
@@ -77,8 +77,8 @@ export default async function handler(req, res) {
     });
     console.log("Filtered appointments:", appointments.length);
 
-    if (allEvents.length > 0 && req.query.debug === "1") {
-      return res.status(200).json({ debug: true, rawKeys: Object.keys(data), sample: allEvents.slice(0,3) });
+    if (req.query.debug === "1") {
+      return res.status(200).json({ debug: true, totalEvents: allEvents.length, filteredCount: appointments.length, filtered: appointments.slice(0,5), allTitles: allEvents.map(e => e.title) });
     }
   } catch (e) {
     console.error("GHL fetch error:", e);
