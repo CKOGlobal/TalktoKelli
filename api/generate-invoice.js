@@ -50,7 +50,7 @@ export default async function handler(req, res) {
   // ── 1. Fetch all appointments from GHL ─────────────────────────
   let appointments = [];
   try {
-    const url = `${GHL_BASE}/calendars/events?locationId=${locationId}&startTime=${startTime}&endTime=${endTime}&calendarId=rCe4hoZBLKZJrwuFEXgH&limit=100`;
+    const url = `${GHL_BASE}/calendars/events?locationId=${locationId}&startTime=${startTime}&endTime=${endTime}&calendarId=rCe4hoZBLKZJrwuFEXgH`;
     const ghlRes = await fetch(url, { headers: GHL_HEADERS(apiKey) });
 
     if (!ghlRes.ok) {
