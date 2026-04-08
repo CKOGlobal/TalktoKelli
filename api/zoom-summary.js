@@ -55,10 +55,15 @@ export default async function handler(req, res) {
   if (req.method === "OPTIONS") return res.status(200).end();
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
-  const { meeting_topic, summary_overview, summary_details, host_email } = req.body;
+  let { meeting_topic, summary_overview, summary_details, host_email } = req.body;
 
   if (!summary_overview) {
     return res.status(400).json({ error: "summary_overview is required" });
+  }
+
+  // Strip Zapier field label prefix if present e.g. "Meeting Topic: Vanessa Vhay" → "Vanessa Vhay"
+  if (meeting_topic) {
+    meeting_topic = meeting_topic.replace(/^meeting\s*topic[:\s]*/i, "").trim();
   }
 
   const now = new Date();
@@ -77,7 +82,7 @@ export default async function handler(req, res) {
       body: JSON.stringify({
         model: "claude-sonnet-4-20250514",
         max_tokens: 1000,
-        system: `You are a coaching assistant for Kelli Owens. Based on a Zoom meeting summary, create a clear, actionable post-call task list for the coaching client. Write directly to the client in a warm, encouraging tone. Use plain text with numbered tasks. No asterisks or markdown. Be specific — reference what was actually discussed. End with one sentence of encouragement.`,
+        system: `You are a coaching assistant for Kelli Owens. Based on a Zoom meeting summary, create a clear, actionable post-call task list for the coaching client. Write directly to the client in a warm, encouraging tone. Use plain text with numbered tasks. No asterisks or markdown. Be specific — reference what was actually discussed. End with one sentence of encouragement. IMPORTANT: Never include URLs, hyperlinks, or web addresses in your output under any circumstances.`,
         messages: [{
           role: "user",
           content: `Meeting with: ${meeting_topic || "Coaching Client"}\nDate: ${dateStr}\n\nMeeting Summary:\n${summary_overview}\n\nAdditional Details:\n${summary_details || "none"}\n\nCreate a numbered action item list for the client. Each task should be clear and specific. Label it: YOUR ACTION ITEMS FROM TODAY'S CALL`,
@@ -91,7 +96,7 @@ export default async function handler(req, res) {
   }
 
   const noteBody = [
-    `POST-CALL TASK LIST — ${(meeting_topic || "Coaching Session").toUpperCase()}`,
+    `POST-CALL TASK LIST — ${(meeting_topic || "Coaching Session").trim().toUpperCase()}`,
     `Generated: ${dateStr}`,
     "",
     taskList,
@@ -108,7 +113,8 @@ export default async function handler(req, res) {
   if (apiKey && locationId && meeting_topic) {
     const contact = await searchContactByName(meeting_topic, apiKey, locationId);
     if (contact) {
-      clientEmail = contact.email || null;
+      clientEmail = contact.email || contact.emailAddress || null;
+      console.log("GHL contact found:", contact.id, "email:", clientEmail);
       await addNote(contact.id, noteBody, apiKey);
     } else {
       console.warn("No GHL contact found for:", meeting_topic);
@@ -129,7 +135,7 @@ export default async function handler(req, res) {
       body: JSON.stringify({
         from: process.env.FROM_EMAIL || "TalkToKelli <coaching@proactively-lazy.com>",
         to: toList,
-        subject: `Your Action Items from Today's Call — ${meeting_topic || "Coaching Session"}`,
+        subject: `Your Action Items from Today's Call — ${(meeting_topic || "Coaching Session").trim()}`,
         text: noteBody,
       }),
     });
