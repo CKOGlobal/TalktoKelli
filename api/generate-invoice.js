@@ -108,6 +108,24 @@ export default async function handler(req, res) {
   const grandTotal = lineItems.length * TOTAL_PER;
   const invoiceNum = `TK-${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, "0")}${String(now.getDate()).padStart(2, "0")}`;
 
+  // ── 2b. Return CSV if requested ────────────────────────────────
+  if (req.query.format === "csv") {
+    const csvRows = [
+      ["Invoice #", "CKO Global INC — Coaching Services Invoice"],
+      ["Period", `${fromDate} to ${toDate}`],
+      ["Generated", new Date().toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })],
+      [],
+      ["#", "Date", "Client", "Prep (15 min @ $75/hr)", "Call (30 min @ $150/hr)", "Total"],
+      ...lineItems.map(l => [l.num, l.date, l.client, `$${l.prepCost.toFixed(2)}`, `$${l.callCost.toFixed(2)}`, `$${l.total.toFixed(2)}`]),
+      [],
+      ["", "", `TOTAL (${lineItems.length} sessions)`, `$${(lineItems.length * PREP_COST).toFixed(2)}`, `$${(lineItems.length * CALL_COST).toFixed(2)}`, `$${grandTotal.toFixed(2)}`],
+    ];
+    const csv = csvRows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(",")).join("\n");
+    res.setHeader("Content-Type", "text/csv");
+    res.setHeader("Content-Disposition", `attachment; filename="coaching-invoice-${invoiceNum}.csv"`);
+    return res.status(200).send(csv);
+  }
+
   // ── 3. Build invoice text ───────────────────────────────────────
   const divider  = "═".repeat(72);
   const thin     = "─".repeat(72);
