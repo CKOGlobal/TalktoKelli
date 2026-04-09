@@ -71,6 +71,14 @@ export default async function handler(req, res) {
     meeting_topic = meeting_topic.replace(/^meeting\s*topic[:\s]*/i, "").trim();
   }
 
+  // ── Gate: skip non-coaching calls silently ─────────────────────
+  const SKIP_KEYWORDS = ["mastermind", "master mind", "laser", "round table", "roundtable", "quick call", "recording"];
+  const topicLower = (meeting_topic || "").toLowerCase();
+  if (SKIP_KEYWORDS.some(kw => topicLower.includes(kw))) {
+    console.log("Skipping non-coaching call:", meeting_topic);
+    return res.status(200).json({ skipped: true, reason: "non-coaching call", meeting_topic });
+  }
+
   const now = new Date();
   const dateStr = now.toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
 
@@ -120,11 +128,20 @@ export default async function handler(req, res) {
   if (apiKey && locationId && meeting_topic) {
     const contact = await searchContactByName(meeting_topic, apiKey, locationId);
     if (contact) {
+      // Only proceed if contact has "coaching" tag — ensures this was a TalkToKelli session
+      const tags = contact.tags || [];
+      const isCoachingClient = tags.some(t => typeof t === "string" ? t.toLowerCase().includes("coaching") : (t.name || "").toLowerCase().includes("coaching"));
+      if (!isCoachingClient) {
+        console.log("Skipping — contact found but no coaching tag:", meeting_topic);
+        return res.status(200).json({ skipped: true, reason: "no coaching tag", contact: contact.id });
+      }
       clientEmail = contact.email || contact.emailAddress || null;
       console.log("GHL contact found:", contact.id, "email:", clientEmail);
       await addNote(contact.id, noteBody, apiKey);
     } else {
       console.warn("No GHL contact found for:", meeting_topic);
+      // Skip silently — not a TalkToKelli client
+      return res.status(200).json({ skipped: true, reason: "contact not found", meeting_topic });
     }
   }
 
