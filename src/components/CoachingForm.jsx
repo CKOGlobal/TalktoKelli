@@ -185,7 +185,7 @@ export default function CoachingForm({ onComplete }) {
     setLoadingHint(current.id);
     try {
       const data = await callAPI({
-        model: "claude-sonnet-4-20250514",
+        model: "claude-sonnet-4-6",
         max_tokens: 600,
         system: "You are a warm business and real estate coach. Plain text only. Numbered lists. No markdown. No asterisks. No intro sentence.",
         messages: [{ role: "user", content: current.aiPrompt }],
@@ -203,7 +203,7 @@ export default function CoachingForm({ onComplete }) {
     setLoadingQual(true);
     try {
       const data = await callAPI({
-        model: "claude-sonnet-4-20250514",
+        model: "claude-sonnet-4-6",
         max_tokens: 900,
         system: `You are a skilled business coach preparing for a one-on-one coaching call. Your clients include real estate investors, entrepreneurs, small business owners, and professionals in various industries — you do not know in advance what kind of business this student is in. Read their agenda carefully and determine their context from what they actually wrote. Generate 3 targeted follow-up questions that go one layer deeper — questions must be specific to what this person actually wrote, not generic, and must match their actual business context. Do NOT assume real estate unless they clearly mentioned it. Return ONLY valid JSON, no other text:
 {"questions":[{"question":"...","why":"brief reason (5-8 words, lowercase)","id":"q0"},{"question":"...","why":"...","id":"q1"},{"question":"...","why":"...","id":"q2"}]}`,
