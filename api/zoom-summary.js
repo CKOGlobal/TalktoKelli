@@ -93,7 +93,7 @@ export default async function handler(req, res) {
         "anthropic-version": "2023-06-01",
       },
       body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
+        model: "claude-sonnet-4-6",
         max_tokens: 1000,
         system: `You are a coaching assistant for Kelli Owens. Based on a Zoom meeting summary, create a clear, actionable post-call task list for the coaching client. Write directly to the client in a warm, encouraging tone. Use plain text with numbered tasks. No asterisks or markdown. Be specific — reference what was actually discussed. End with one sentence of encouragement. IMPORTANT: Never include URLs, hyperlinks, or web addresses in your output under any circumstances.`,
         messages: [{
@@ -103,9 +103,13 @@ export default async function handler(req, res) {
       }),
     });
     const claudeData = await claudeRes.json();
-    taskList = claudeData.content?.[0]?.text || taskList;
+    if (claudeData.error) {
+      console.error("Claude API error response:", JSON.stringify(claudeData.error));
+    } else {
+      taskList = claudeData.content?.[0]?.text || taskList;
+    }
   } catch (e) {
-    console.error("Claude error:", e);
+    console.error("Claude fetch error:", e);
   }
 
   const clientName = (meeting_topic || "Coaching Session").trim();
