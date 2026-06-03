@@ -1,16 +1,20 @@
 // api/generate-invoice.js
-// Pulls all confirmed Coaching appointments from GHL from Jan 1 to today,
-// calculates billing at $93.75/call (15min prep @ $75/hr + 30min call @ $150/hr),
-// and emails a formatted invoice to accounting@askiws.com + coaching@askiws.com
+// Pulls confirmed Coaching appointments from GHL for the PREVIOUS calendar month
+// (or an explicit ?from/?to range), calculates billing at $93.75/call
+// (15min prep @ $75/hr + 30min call @ $150/hr), and emails a formatted invoice
+// to accounting@askiws.com + coaching@askiws.com + Kelli.
 //
-// Trigger by visiting: https://www.talktokelli.com/api/generate-invoice?from=2026-01-01
-// Optional params: from (default Jan 1 current year), to (default today)
+// AUTOMATIC: runs via Vercel cron on the 1st of each month (see vercel.json),
+//            billing the previous calendar month. No manual action needed.
+// MANUAL:    https://www.talktokelli.com/api/generate-invoice?key=YOUR_CRON_SECRET&from=2026-05-01&to=2026-05-31
 //
 // Required Vercel env vars:
 //   GHL_API_KEY
 //   GHL_LOCATION_ID
 //   RESEND_API_KEY
 //   FROM_EMAIL
+//   CRON_SECRET   — any long random string; Vercel sends it automatically on
+//                   cron runs. If unset, the endpoint stays open (no gate).
 
 const GHL_BASE = "https://services.leadconnectorhq.com";
 const GHL_HEADERS = (apiKey) => ({
@@ -33,6 +37,21 @@ export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
   if (req.method === "OPTIONS") return res.status(200).end();
 
+  // ── Auth gate ───────────────────────────────────────────────────
+  // Vercel automatically sends `Authorization: Bearer <CRON_SECRET>` on
+  // scheduled cron invocations when CRON_SECRET is set. Manual runs pass
+  // the same value as ?key=<CRON_SECRET>. If CRON_SECRET is not set, the
+  // endpoint stays open (so nothing breaks before you add the env var).
+  const cronSecret = process.env.CRON_SECRET;
+  if (cronSecret) {
+    const authHeader = req.headers.authorization || "";
+    const keyParam = req.query.key || "";
+    const authed = authHeader === `Bearer ${cronSecret}` || keyParam === cronSecret;
+    if (!authed) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+  }
+
   const apiKey     = process.env.GHL_API_KEY;
   const locationId = process.env.GHL_LOCATION_ID;
 
@@ -41,8 +60,18 @@ export default async function handler(req, res) {
   }
 
   const now      = new Date();
-  const fromDate = req.query.from || `${now.getFullYear()}-01-01`;
-  const toDate   = req.query.to   || now.toISOString().split("T")[0];
+
+  // Default window = the PREVIOUS calendar month — this is what the monthly
+  // cron bills. Explicit ?from / ?to still override for manual re-runs or
+  // corrections (e.g. ?from=2026-03-01&to=2026-03-31).
+  const pad = (n) => String(n).padStart(2, "0");
+  const prevMonthLastDay  = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 0));
+  const prevMonthFirstDay = new Date(Date.UTC(prevMonthLastDay.getUTCFullYear(), prevMonthLastDay.getUTCMonth(), 1));
+  const defFrom = `${prevMonthFirstDay.getUTCFullYear()}-${pad(prevMonthFirstDay.getUTCMonth() + 1)}-01`;
+  const defTo   = `${prevMonthLastDay.getUTCFullYear()}-${pad(prevMonthLastDay.getUTCMonth() + 1)}-${pad(prevMonthLastDay.getUTCDate())}`;
+
+  const fromDate = req.query.from || defFrom;
+  const toDate   = req.query.to   || defTo;
 
   const startTime = new Date(`${fromDate}T00:00:00.000Z`).getTime();
   const endTime   = new Date(`${toDate}T23:59:59.000Z`).getTime();
