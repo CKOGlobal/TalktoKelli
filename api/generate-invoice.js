@@ -2,7 +2,7 @@
 // Pulls confirmed Coaching appointments from GHL for the PREVIOUS calendar month
 // (or an explicit ?from/?to range), calculates billing at $93.75/call
 // (15min prep @ $75/hr + 30min call @ $150/hr), and emails a formatted invoice
-// to accounting@askiws.com + coaching@askiws.com + Kelli.
+// to accounting@askiws.com + invoice@askiws.com + coaching@askiws.com + Kelli.
 //
 // AUTOMATIC: runs via Vercel cron on the 1st of each month (see vercel.json),
 //            billing the previous calendar month. No manual action needed.
@@ -217,7 +217,7 @@ export default async function handler(req, res) {
       },
       body: JSON.stringify({
         from: process.env.FROM_EMAIL || "TalkToKelli <coaching@proactively-lazy.com>",
-        to: ["accounting@askiws.com"],
+        to: ["accounting@askiws.com", "invoice@askiws.com"],
         cc: ["coaching@askiws.com", "kelli@proactively-lazy.com"],
         subject: `Coaching Invoice ${invoiceNum} — ${lineItems.length} Sessions — $${grandTotal.toFixed(2)}`,
         text: invoiceText,
@@ -240,6 +240,6 @@ export default async function handler(req, res) {
     sessions: lineItems.length,
     totalDue: `$${grandTotal.toFixed(2)}`,
     period: { from: fromDate, to: toDate },
-    sentTo: ["accounting@askiws.com", "coaching@askiws.com", "kelli@proactively-lazy.com"],
+    sentTo: ["accounting@askiws.com", "invoice@askiws.com", "coaching@askiws.com", "kelli@proactively-lazy.com"],
   });
 }
