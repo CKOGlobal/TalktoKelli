@@ -2,7 +2,7 @@
 // Pulls confirmed Coaching appointments from GHL for the PREVIOUS calendar month
 // (or an explicit ?from/?to range), calculates billing at $93.75/call
 // (15min prep @ $75/hr + 30min call @ $150/hr), and emails a formatted invoice
-// to accounting@askiws.com + invoice@askiws.com + coaching@askiws.com + Kelli.
+// to accounting@askloral.com + invoice@askloral.com + coaching@askloral.com + Kelli.
 //
 // AUTOMATIC: runs via Vercel cron on the 1st of each month (see vercel.json),
 //            billing the previous calendar month. No manual action needed.
@@ -13,8 +13,7 @@
 //   GHL_LOCATION_ID
 //   RESEND_API_KEY
 //   FROM_EMAIL
-//   CRON_SECRET   — any long random string; Vercel sends it automatically on
-//                   cron runs. If unset, the endpoint stays open (no gate).
+//   CRON_SECRET
 
 const GHL_BASE = "https://services.leadconnectorhq.com";
 const GHL_HEADERS = (apiKey) => ({
@@ -23,9 +22,9 @@ const GHL_HEADERS = (apiKey) => ({
   "Version": "2021-07-28",
 });
 
-const PREP_RATE    = 75.00;   // per hour
+const PREP_RATE    = 75.00;
 const PREP_MINS    = 15;
-const CALL_RATE    = 150.00;  // per hour
+const CALL_RATE    = 150.00;
 const CALL_MINS    = 30;
 const PREP_COST    = (PREP_MINS / 60) * PREP_RATE;   // $18.75
 const CALL_COST    = (CALL_MINS / 60) * CALL_RATE;   // $75.00
@@ -37,11 +36,6 @@ export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
   if (req.method === "OPTIONS") return res.status(200).end();
 
-  // ── Auth gate ───────────────────────────────────────────────────
-  // Vercel automatically sends `Authorization: Bearer <CRON_SECRET>` on
-  // scheduled cron invocations when CRON_SECRET is set. Manual runs pass
-  // the same value as ?key=<CRON_SECRET>. If CRON_SECRET is not set, the
-  // endpoint stays open (so nothing breaks before you add the env var).
   const cronSecret = process.env.CRON_SECRET;
   if (cronSecret) {
     const authHeader = req.headers.authorization || "";
@@ -59,11 +53,7 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: "GHL_API_KEY or GHL_LOCATION_ID not set" });
   }
 
-  const now      = new Date();
-
-  // Default window = the PREVIOUS calendar month — this is what the monthly
-  // cron bills. Explicit ?from / ?to still override for manual re-runs or
-  // corrections (e.g. ?from=2026-03-01&to=2026-03-31).
+  const now = new Date();
   const pad = (n) => String(n).padStart(2, "0");
   const prevMonthLastDay  = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 0));
   const prevMonthFirstDay = new Date(Date.UTC(prevMonthLastDay.getUTCFullYear(), prevMonthLastDay.getUTCMonth(), 1));
@@ -76,7 +66,7 @@ export default async function handler(req, res) {
   const startTime = new Date(`${fromDate}T00:00:00.000Z`).getTime();
   const endTime   = new Date(`${toDate}T23:59:59.000Z`).getTime();
 
-  // ── 1. Fetch all appointments from GHL ─────────────────────────
+  // ── 1. Fetch appointments from GHL ─────────────────────────────
   let appointments = [];
   try {
     const url = `${GHL_BASE}/calendars/events?locationId=${locationId}&startTime=${startTime}&endTime=${endTime}&calendarId=rCe4hoZBLKZJrwuFEXgH`;
@@ -89,12 +79,9 @@ export default async function handler(req, res) {
     }
 
     const data = await ghlRes.json();
-    console.log("GHL raw keys:", Object.keys(data));
     const allEvents = data.events || data.appointments || [];
     console.log("GHL total events:", allEvents.length);
-    if (allEvents.length > 0) console.log("Sample event status:", allEvents[0].status, allEvents[0].appointmentStatus);
 
-    // Filter: confirmed status, exclude non-coaching events, must have contactId
     const EXCLUDE_KEYWORDS = ["block", "lunch", "busy", "mastermind", "master mind", "laser", "round table", "roundtable"];
     appointments = allEvents.filter(e => {
       const status = e.appointmentStatus || e.status || "";
@@ -120,7 +107,7 @@ export default async function handler(req, res) {
 
   // ── 2. Build line items ─────────────────────────────────────────
   const lineItems = appointments.map((appt, i) => {
-    const date     = new Date(appt.startTime).toLocaleDateString("en-US", { weekday: "short", year: "numeric", month: "short", day: "numeric" });
+    const date = new Date(appt.startTime).toLocaleDateString("en-US", { weekday: "short", year: "numeric", month: "short", day: "numeric" });
     const clientName = appt.title || appt.contactName || "Unknown Client";
     return {
       num: i + 1,
@@ -137,14 +124,15 @@ export default async function handler(req, res) {
   const grandTotal = lineItems.length * TOTAL_PER;
   const invoiceNum = `TK-${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, "0")}${String(now.getDate()).padStart(2, "0")}`;
 
-  // ── 2b. Return CSV if requested ────────────────────────────────
+  // ── 2b. CSV export ──────────────────────────────────────────────
   if (req.query.format === "csv") {
     const csvRows = [
-      ["Invoice #", "CKO Global INC — Coaching Services Invoice"],
+      ["Invoice #", invoiceNum],
+      ["From", "CKO Global INC — Coaching Services Invoice"],
       ["Period", `${fromDate} to ${toDate}`],
       ["Generated", new Date().toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })],
       [],
-      ["#", "Date", "Client", "Prep (15 min @ $75/hr)", "Call (30 min @ $150/hr)", "Total"],
+      ["#", "Date", "Client", "Prep 15min @ $75/hr", "Call 30min @ $150/hr", "Line Total"],
       ...lineItems.map(l => [l.num, l.date, l.client, `$${l.prepCost.toFixed(2)}`, `$${l.callCost.toFixed(2)}`, `$${l.total.toFixed(2)}`]),
       [],
       ["", "", `TOTAL (${lineItems.length} sessions)`, `$${(lineItems.length * PREP_COST).toFixed(2)}`, `$${(lineItems.length * CALL_COST).toFixed(2)}`, `$${grandTotal.toFixed(2)}`],
@@ -155,9 +143,9 @@ export default async function handler(req, res) {
     return res.status(200).send(csv);
   }
 
-  // ── 3. Build invoice text ───────────────────────────────────────
-  const divider  = "═".repeat(72);
-  const thin     = "─".repeat(72);
+  // ── 3. Build invoice text (itemized) ───────────────────────────
+  const divider = "═".repeat(88);
+  const thin    = "─".repeat(88);
 
   const header = [
     divider,
@@ -167,39 +155,37 @@ export default async function handler(req, res) {
     `Invoice Date: ${now.toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}`,
     `Period:       ${fromDate} through ${toDate}`,
     `From:         Kelli Owens / CKO Global INC`,
-    `              kelli@proactively-lazy.com`,
-    `To:           ASKIWS Accounting`,
-    `              accounting@askiws.com`,
+    `              kelli@proactively-lazy.com  |  346-628-5216`,
+    `To:           Loral Accounting`,
+    `              accounting@askloral.com`,
     divider,
     "",
     "BILLING RATES",
     thin,
-    `  Pre-Call Prep:  ${PREP_MINS} minutes @ $${PREP_RATE.toFixed(2)}/hr = $${PREP_COST.toFixed(2)} per call`,
-    `  Coaching Call:  ${CALL_MINS} minutes @ $${CALL_RATE.toFixed(2)}/hr = $${CALL_COST.toFixed(2)} per call`,
+    `  Pre-Call Prep:  ${PREP_MINS} min @ $${PREP_RATE.toFixed(2)}/hr = $${PREP_COST.toFixed(2)} per call`,
+    `  Coaching Call:  ${CALL_MINS} min @ $${CALL_RATE.toFixed(2)}/hr = $${CALL_COST.toFixed(2)} per call`,
     `  Total Per Call: $${TOTAL_PER.toFixed(2)}`,
     "",
-    "SESSION LOG",
+    "SESSION LOG — ITEMIZED",
     thin,
-    `  #   Date                    Client                     Total`,
+    `  ${"#".padEnd(4)}${"Date".padEnd(26)}${"Client".padEnd(30)}${"Prep (15m)".padEnd(14)}${"Call (30m)".padEnd(14)}${"Total"}`,
     thin,
   ].join("\n");
 
   const rows = lineItems.map(l =>
-    `  ${String(l.num).padEnd(4)}${l.date.padEnd(24)}${l.client.padEnd(27)}$${l.total.toFixed(2)}`
+    `  ${String(l.num).padEnd(4)}${l.date.padEnd(26)}${l.client.padEnd(30)}${"$" + l.prepCost.toFixed(2)}${" ".repeat(8)}${"$" + l.callCost.toFixed(2)}${" ".repeat(8)}$${l.total.toFixed(2)}`
   ).join("\n");
 
   const footer = [
     thin,
-    `  Total Sessions: ${lineItems.length}`,
-    `  Prep Subtotal:  $${(lineItems.length * PREP_COST).toFixed(2)}  (${lineItems.length} x ${PREP_MINS} min)`,
-    `  Call Subtotal:  $${(lineItems.length * CALL_COST).toFixed(2)}  (${lineItems.length} x ${CALL_MINS} min)`,
+    `  Sessions:       ${lineItems.length}`,
+    `  Prep Subtotal:  $${(lineItems.length * PREP_COST).toFixed(2)}  (${lineItems.length} x $${PREP_COST.toFixed(2)})`,
+    `  Call Subtotal:  $${(lineItems.length * CALL_COST).toFixed(2)}  (${lineItems.length} x $${CALL_COST.toFixed(2)})`,
     "",
     divider,
     `  AMOUNT DUE:     $${grandTotal.toFixed(2)}`,
+    `  Payment due within 30 days of invoice date.`,
     divider,
-    "",
-    "Payment due within 30 days of invoice date.",
-    "Questions: kelli@proactively-lazy.com | 346-628-5216",
     "",
     thin,
     "Generated automatically via TalkToKelli.com Coaching Invoice System",
@@ -207,7 +193,7 @@ export default async function handler(req, res) {
 
   const invoiceText = [header, rows, footer].join("\n");
 
-  // ── 4. Send invoice via Resend ──────────────────────────────────
+  // ── 4. Send via Resend ──────────────────────────────────────────
   try {
     const resendRes = await fetch("https://api.resend.com/emails", {
       method: "POST",
@@ -217,8 +203,8 @@ export default async function handler(req, res) {
       },
       body: JSON.stringify({
         from: process.env.FROM_EMAIL || "TalkToKelli <coaching@proactively-lazy.com>",
-        to: ["accounting@askiws.com", "invoice@askiws.com"],
-        cc: ["coaching@askiws.com", "kelli@proactively-lazy.com"],
+        to: ["accounting@askloral.com", "invoice@askloral.com"],
+        cc: ["coaching@askloral.com", "kelli@proactively-lazy.com"],
         subject: `Coaching Invoice ${invoiceNum} — ${lineItems.length} Sessions — $${grandTotal.toFixed(2)}`,
         text: invoiceText,
       }),
@@ -240,6 +226,6 @@ export default async function handler(req, res) {
     sessions: lineItems.length,
     totalDue: `$${grandTotal.toFixed(2)}`,
     period: { from: fromDate, to: toDate },
-    sentTo: ["accounting@askiws.com", "invoice@askiws.com", "coaching@askiws.com", "kelli@proactively-lazy.com"],
+    sentTo: ["accounting@askloral.com", "invoice@askloral.com", "coaching@askloral.com", "kelli@proactively-lazy.com"],
   });
 }
