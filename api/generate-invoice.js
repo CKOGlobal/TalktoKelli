@@ -30,6 +30,15 @@ const PREP_COST    = (PREP_MINS / 60) * PREP_RATE;   // $18.75
 const CALL_COST    = (CALL_MINS / 60) * CALL_RATE;   // $75.00
 const TOTAL_PER    = PREP_COST + CALL_COST;           // $93.75
 
+// Coaching calendar timezone. Invoice months follow LOCAL calendar dates, so a
+// session at 2pm on Apr 30 Central belongs to April even though its UTC
+// timestamp and GHL's fuzzy range boundary can pull it into a May query.
+const BILLING_TZ   = "America/Chicago";
+const localDateStr = (iso) =>
+  new Intl.DateTimeFormat("en-CA", {
+    timeZone: BILLING_TZ, year: "numeric", month: "2-digit", day: "2-digit",
+  }).format(new Date(iso));   // → "2026-05-31"
+
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
@@ -63,8 +72,11 @@ export default async function handler(req, res) {
   const fromDate = req.query.from || defFrom;
   const toDate   = req.query.to   || defTo;
 
-  const startTime = new Date(`${fromDate}T00:00:00.000Z`).getTime();
-  const endTime   = new Date(`${toDate}T23:59:59.000Z`).getTime();
+  // Widen the GHL query ~1.5 days each side so no local-timezone boundary
+  // session is dropped; the exact month is enforced client-side via localDateStr.
+  const BUFFER_MS = 36 * 60 * 60 * 1000;
+  const startTime = new Date(`${fromDate}T00:00:00.000Z`).getTime() - BUFFER_MS;
+  const endTime   = new Date(`${toDate}T23:59:59.000Z`).getTime() + BUFFER_MS;
 
   // ── 1. Fetch appointments from GHL ─────────────────────────────
   let appointments = [];
@@ -89,7 +101,11 @@ export default async function handler(req, res) {
       const isConfirmed = ["confirmed","booked","new"].includes(status);
       const isExcluded = EXCLUDE_KEYWORDS.some(kw => title.includes(kw)) || e.isRecurring === true;
       const hasContact = !!e.contactId;
-      return isConfirmed && !isExcluded && hasContact;
+      // Enforce the exact billing month in the calendar's local timezone so
+      // boundary sessions (e.g. Apr 30) never leak into an adjacent month.
+      const localDate = e.startTime ? localDateStr(e.startTime) : "";
+      const inRange = localDate >= fromDate && localDate <= toDate;
+      return isConfirmed && !isExcluded && hasContact && inRange;
     });
     console.log("Filtered appointments:", appointments.length);
 
@@ -193,6 +209,87 @@ export default async function handler(req, res) {
 
   const invoiceText = [header, rows, footer].join("\n");
 
+  // ── 3b. Itemized HTML invoice (renders as a real table in email clients) ──
+  const escapeHtml = (s) =>
+    String(s ?? "")
+      .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+
+  const htmlRows = lineItems.map((l, idx) => `
+        <tr style="background:${idx % 2 ? "#FBF8F3" : "#FFFFFF"};">
+          <td style="padding:10px 8px;border-bottom:1px solid #EFE7DB;color:#9C8068;">${l.num}</td>
+          <td style="padding:10px 8px;border-bottom:1px solid #EFE7DB;white-space:nowrap;">${escapeHtml(l.date)}</td>
+          <td style="padding:10px 8px;border-bottom:1px solid #EFE7DB;">${escapeHtml(l.client)}</td>
+          <td style="padding:10px 8px;border-bottom:1px solid #EFE7DB;text-align:right;color:#4A3220;white-space:nowrap;">${l.prepMins}m&nbsp;·&nbsp;$${l.prepCost.toFixed(2)}</td>
+          <td style="padding:10px 8px;border-bottom:1px solid #EFE7DB;text-align:right;color:#4A3220;white-space:nowrap;">${l.callMins}m&nbsp;·&nbsp;$${l.callCost.toFixed(2)}</td>
+          <td style="padding:10px 8px;border-bottom:1px solid #EFE7DB;text-align:right;font-weight:bold;">$${l.total.toFixed(2)}</td>
+        </tr>`).join("");
+
+  const htmlBody = `<!DOCTYPE html>
+<html><body style="margin:0;padding:0;background:#F7F3EE;font-family:Georgia,'Times New Roman',serif;color:#2C1A0E;">
+  <div style="max-width:720px;margin:0 auto;padding:32px 20px;">
+    <div style="background:#2C1A0E;padding:24px 28px;border-radius:12px 12px 0 0;">
+      <div style="font-size:20px;color:#E8D5C0;font-weight:500;">Coaching Services Invoice</div>
+      <div style="font-size:11px;color:#8B6B47;letter-spacing:0.12em;text-transform:uppercase;margin-top:6px;">CKO Global INC &middot; Kelli Owens</div>
+    </div>
+    <div style="background:#FFFFFF;border:1px solid #E8DDD0;border-top:none;padding:28px;border-radius:0 0 12px 12px;">
+      <table style="width:100%;font-size:13px;line-height:1.8;color:#4A3220;border-collapse:collapse;margin-bottom:22px;">
+        <tr>
+          <td style="vertical-align:top;">
+            <strong style="color:#2C1A0E;">Invoice #:</strong> ${escapeHtml(invoiceNum)}<br>
+            <strong style="color:#2C1A0E;">Date:</strong> ${escapeHtml(now.toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" }))}<br>
+            <strong style="color:#2C1A0E;">Period:</strong> ${escapeHtml(fromDate)} &ndash; ${escapeHtml(toDate)}
+          </td>
+          <td style="vertical-align:top;text-align:right;">
+            <strong style="color:#2C1A0E;">Bill To:</strong> Loral Accounting<br>
+            accounting@askloral.com<br>
+            <span style="color:#9C8068;">From: Kelli Owens &middot; 346-628-5216</span>
+          </td>
+        </tr>
+      </table>
+
+      <div style="font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:#C4622D;margin:0 0 6px;">Billing Rates</div>
+      <p style="margin:0 0 22px;font-size:12px;color:#6B4E35;line-height:1.7;">
+        Pre-Call Prep: ${PREP_MINS} min @ $${PREP_RATE.toFixed(2)}/hr = $${PREP_COST.toFixed(2)} &nbsp;&middot;&nbsp;
+        Coaching Call: ${CALL_MINS} min @ $${CALL_RATE.toFixed(2)}/hr = $${CALL_COST.toFixed(2)} &nbsp;&middot;&nbsp;
+        <strong style="color:#2C1A0E;">$${TOTAL_PER.toFixed(2)} per session</strong>
+      </p>
+
+      <div style="font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:#C4622D;margin:0 0 10px;">Itemized Sessions</div>
+      <table style="width:100%;border-collapse:collapse;font-size:13px;color:#2C1A0E;">
+        <thead>
+          <tr style="background:#2C1A0E;color:#E8D5C0;text-align:left;">
+            <th style="padding:10px 8px;font-weight:500;">#</th>
+            <th style="padding:10px 8px;font-weight:500;">Date</th>
+            <th style="padding:10px 8px;font-weight:500;">Client</th>
+            <th style="padding:10px 8px;font-weight:500;text-align:right;">Prep (${PREP_MINS}m)</th>
+            <th style="padding:10px 8px;font-weight:500;text-align:right;">Call (${CALL_MINS}m)</th>
+            <th style="padding:10px 8px;font-weight:500;text-align:right;">Total</th>
+          </tr>
+        </thead>
+        <tbody>${htmlRows}
+        </tbody>
+        <tfoot>
+          <tr>
+            <td colspan="3" style="padding:12px 8px;text-align:right;color:#6B4E35;">Subtotals (${lineItems.length} session${lineItems.length === 1 ? "" : "s"})</td>
+            <td style="padding:12px 8px;text-align:right;color:#6B4E35;white-space:nowrap;">$${(lineItems.length * PREP_COST).toFixed(2)}</td>
+            <td style="padding:12px 8px;text-align:right;color:#6B4E35;white-space:nowrap;">$${(lineItems.length * CALL_COST).toFixed(2)}</td>
+            <td style="padding:12px 8px;text-align:right;color:#6B4E35;white-space:nowrap;">$${grandTotal.toFixed(2)}</td>
+          </tr>
+          <tr style="background:#F3EBDF;">
+            <td colspan="5" style="padding:16px 8px;text-align:right;font-size:15px;font-weight:bold;color:#2C1A0E;">AMOUNT DUE</td>
+            <td style="padding:16px 8px;text-align:right;font-size:15px;font-weight:bold;color:#3D7A5C;white-space:nowrap;">$${grandTotal.toFixed(2)}</td>
+          </tr>
+        </tfoot>
+      </table>
+
+      <p style="margin:20px 0 0;font-size:12px;color:#6B4E35;">Payment due within 30 days of invoice date.</p>
+      <hr style="border:0;border-top:1px solid #E8DDD0;margin:24px 0 12px;">
+      <p style="margin:0;font-size:11px;color:#9C8068;">Generated automatically via TalkToKelli.com Coaching Invoice System</p>
+    </div>
+  </div>
+</body></html>`;
+
   // ── 4. Send via Resend ──────────────────────────────────────────
   try {
     const resendRes = await fetch("https://api.resend.com/emails", {
@@ -207,6 +304,7 @@ export default async function handler(req, res) {
         cc: ["coaching@askloral.com", "kelli@proactively-lazy.com"],
         subject: `Coaching Invoice ${invoiceNum} — ${lineItems.length} Sessions — $${grandTotal.toFixed(2)}`,
         text: invoiceText,
+        html: htmlBody,
       }),
     });
 

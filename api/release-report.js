@@ -19,7 +19,7 @@
 //   GHL_LOCATION_ID
 //   RESEND_API_KEY
 //   FROM_EMAIL
-//   COACHING_CC_EMAIL         — e.g. coaching@askiws.com
+//   COACHING_CC_EMAIL         — e.g. coaching@askloral.com
 //   RELEASE_TOKEN_SECRET      — must match what zoom-summary.js used to sign
 
 import crypto from "crypto";
