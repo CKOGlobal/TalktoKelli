@@ -5,7 +5,7 @@
 // 3. Finds the GHL contact by name (meeting topic)
 // 4. Posts task list as a note on the contact (always — internal record)
 // 5. Emails task list to KELLI ONLY with Release / Hold action buttons
-//    - Release  → sends to client + coaching@askiws.com (configurable)
+//    - Release  → sends to client + coaching@askloral.com (configurable)
 //    - Hold     → nothing further sent
 //
 // Required Vercel env vars:
